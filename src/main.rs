@@ -1,11 +1,13 @@
 extern crate gif;
 extern crate image;
 extern crate termcolor;
+extern crate regex;
 use image::{Rgb,RgbImage,DynamicImage,io::Reader as ImageReader};
 use std::collections::{HashMap, VecDeque};
 use std::{thread,time};
 use std::io::Write;
 use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
+use regex::Regex;
 
 fn gen_palette(img: &RgbImage)->HashMap<[u8;3],(u32,u32)>
 {
@@ -72,6 +74,40 @@ fn flood( img: &mut RgbImage, col:Rgb<u8>, new_col:Rgb<u8>, seed:(u32,u32))
 fn main()
 {
 
+    let mut line = String::new();
+    //?flood on false else replace
+    let mut mode:Option<bool> = Option::None;
+    while mode == None
+    {
+        println!("Choose a mode, enter either 'flood' or 'replace'");
+        std::io::stdin().read_line(&mut line).unwrap();
+        line = line.to_lowercase();
+        {
+            let re = Regex::new(r"(?i)flood").unwrap();
+            if re.is_match(&line)
+            {
+                mode = Some(false);
+                println!("mode chosen: flood");
+            } else {
+                let re = Regex::new(r"(?i)replace").unwrap();
+                if re.is_match(&line)
+                {
+                    mode = Some(true);
+                    println!("mode chosen: replace");
+                } else { print!("Invalid Input Text!"); }
+            }
+        }
+    }
+
+    let re = Regex::new(r"(\d+)").unwrap();
+    let a: &str = "Adniel Hamed 193 asidogfh 2439807";
+
+    for c in re.captures_iter(a)
+    {
+        println!("Found {}", &c[0])
+    }
+
+
     //TODO: print out colors.
     let mut stdout = StandardStream::stdout(ColorChoice::Always);
 
@@ -84,15 +120,26 @@ fn main()
     let width: u32 = img.width();
     let mut cache: HashMap<[u8;3],(u32,u32)> = gen_palette(&img);
 
-    const FROM_COL:[u8;3] = [255,255,255];
 
     // ? this is a replace mode, maybe take in an input to replace, or do it at seed
-    while cache.contains_key(&FROM_COL)
+    if mode
     {
-        flood(&mut img, Rgb::from(FROM_COL), Rgb::from([200,255,255]), *cache.get(&FROM_COL).unwrap());
-        cache.clear();
-        cache = gen_palette(&img);
+        //TODO: read in the from color and the to color and check if in map, also add option to print map
+        const FROM_COL:[u8;3] = [255,255,255];
+        while cache.contains_key(&FROM_COL)
+        {
+            flood(&mut img, Rgb::from(FROM_COL), Rgb::from([200, 255, 255]), *cache.get(&FROM_COL).unwrap());
+            cache.clear();
+            cache = gen_palette(&img);
+        }
     }
+    else
+    {
+        //? this is the flood mode
+        //todo: read in a seed, use the get pixel as the from color for the flood and read in the new color
+
+    }
+
 
     img.save("Output.png").expect("Failed to write image");
 
