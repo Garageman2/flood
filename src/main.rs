@@ -73,7 +73,6 @@ fn flood( img: &mut RgbImage, col:Rgb<u8>, new_col:Rgb<u8>, seed:(u32,u32))
 
 fn input_pos(x:u32, y:u32) -> (u32,u32)
 {
-    //Todo: clamp to inputs
     let mut line:String = String::new();
     let mut position:Option<(u32,u32)> = Option::None;
     while (position == None)
@@ -89,7 +88,7 @@ fn input_pos(x:u32, y:u32) -> (u32,u32)
 
             match cap.nth(0).unwrap().get(0).unwrap().as_str().parse::<i32>()
             {
-                Ok(i) => position = Some((i as u32,i as u32)),
+                Ok(i) => position = Some((i.clamp(0,x as i32) as u32,i as u32)),
                 Err(e) => position = Option::None
             }
 
@@ -97,8 +96,53 @@ fn input_pos(x:u32, y:u32) -> (u32,u32)
             {
                 match cap.nth(0).unwrap().get(1).unwrap().as_str().parse::<i32>()
                 {
-                    Ok(j) => position = Some((position.unwrap().0 as u32, j as u32)),
+                    Ok(j) => position = Some((position.unwrap().0 as u32, j.clamp(0,y as i32) as u32)),
                     Err(e) => position = Option::None
+                }
+            }
+        }
+        else { println!("not enough coordinates!"); }
+
+
+    }
+    return position.unwrap();
+}
+
+fn input_col() -> [u8;3]
+{
+    let mut line:String = String::new();
+    let mut position:Option<[u8;3]> = Option::None;
+    while (position == None)
+    {
+        println!("enter a position in the format x,y ");
+        std::io::stdin().read_line(&mut line).unwrap();
+        let re = Regex::new(r"(\d+)").unwrap();
+        let mut cap = re.captures_iter(&line);
+
+
+        if re.captures_len() >= 2
+        {
+
+            match cap.nth(0).unwrap().get(0).unwrap().as_str().parse::<u8>()
+            {
+                Ok(i) => position = Some([i,i,i]),
+                Err(e) => position = Option::None
+            }
+
+            if position != None
+            {
+                match cap.nth(0).unwrap().get(1).unwrap().as_str().parse::<u8>()
+                {
+                    Ok(j) => position[1] = j,
+                    Err(e) => position = Option::None
+                }
+                if position != None
+                {
+                    match cap.nth(0).unwrap().get(1).unwrap().as_str().parse::<i32>()
+                    {
+                        Ok(k) => position[2] = k,
+                        Err(e) => position = Option::None
+                    }
                 }
             }
         }
@@ -111,9 +155,6 @@ fn input_pos(x:u32, y:u32) -> (u32,u32)
 
 fn main()
 {
-    let position: (u32,u32) = input_pos(100,100);
-    println!("Test {},{}", position.0,position.1);
-
     let mut line = String::new();
     //?flood on false else replace
     let mut mode:Option<bool> = Option::None;
@@ -177,6 +218,9 @@ fn main()
     {
         //? this is the flood mode
         //todo: read in a seed, use the get pixel as the from color for the flood and read in the new color
+        let mut seed = input_pos(Width,Height);
+        //todo: needs a function to get an rgb
+        flood(&mut img, img.get_pixel(*seed.0,*seed.1),Rgb::from([0,0,0]),seed);
 
     }
 
