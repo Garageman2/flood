@@ -71,8 +71,48 @@ fn flood( img: &mut RgbImage, col:Rgb<u8>, new_col:Rgb<u8>, seed:(u32,u32))
     }
 }
 
+fn input_pos(x:u32, y:u32) -> (u32,u32)
+{
+    //Todo: clamp to inputs
+    let mut line:String = String::new();
+    let mut position:Option<(u32,u32)> = Option::None;
+    while (position == None)
+    {
+        println!("enter a position in the format x,y ");
+        std::io::stdin().read_line(&mut line).unwrap();
+        let re = Regex::new(r"(\d+)").unwrap();
+        let mut cap = re.captures_iter(&line);
+
+
+        if re.captures_len() >= 1
+        {
+
+            match cap.nth(0).unwrap().get(0).unwrap().as_str().parse::<i32>()
+            {
+                Ok(i) => position = Some((i as u32,i as u32)),
+                Err(e) => position = Option::None
+            }
+
+            if position != None
+            {
+                match cap.nth(0).unwrap().get(1).unwrap().as_str().parse::<i32>()
+                {
+                    Ok(j) => position = Some((position.unwrap().0 as u32, j as u32)),
+                    Err(e) => position = Option::None
+                }
+            }
+        }
+        else { println!("not enough coordinates!"); }
+
+
+    }
+    return position.unwrap();
+}
+
 fn main()
 {
+    let position: (u32,u32) = input_pos(100,100);
+    println!("Test {},{}", position.0,position.1);
 
     let mut line = String::new();
     //?flood on false else replace
@@ -122,7 +162,7 @@ fn main()
 
 
     // ? this is a replace mode, maybe take in an input to replace, or do it at seed
-    if mode
+    if mode.unwrap()
     {
         //TODO: read in the from color and the to color and check if in map, also add option to print map
         const FROM_COL:[u8;3] = [255,255,255];
