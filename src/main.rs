@@ -111,10 +111,10 @@ fn input_pos(x:u32, y:u32) -> (u32,u32)
 fn input_col() -> [u8;3]
 {
     let mut line:String = String::new();
-    let mut position:Option<[u8;3]> = Option::None;
-    while (position == None)
+    let mut col:Option<[u8;3]> = Option::None;
+    while (col == None)
     {
-        println!("enter a position in the format x,y ");
+        println!("enter a position in the format R,G,B such as 255,255,255 ");
         std::io::stdin().read_line(&mut line).unwrap();
         let re = Regex::new(r"(\d+)").unwrap();
         let mut cap = re.captures_iter(&line);
@@ -125,23 +125,23 @@ fn input_col() -> [u8;3]
 
             match cap.nth(0).unwrap().get(0).unwrap().as_str().parse::<u8>()
             {
-                Ok(i) => position = Some([i,i,i]),
-                Err(e) => position = Option::None
+                Ok(i) => col = Some([i,i,i]),
+                Err(e) => col = None
             }
 
-            if position != None
+            if col != None
             {
                 match cap.nth(0).unwrap().get(1).unwrap().as_str().parse::<u8>()
                 {
-                    Ok(j) => position[1] = j,
-                    Err(e) => position = Option::None
+                    Ok(j) => col = Some([col.unwrap()[0],j,j]),
+                    Err(e) => col = None
                 }
-                if position != None
+                if col != None
                 {
-                    match cap.nth(0).unwrap().get(1).unwrap().as_str().parse::<i32>()
+                    match cap.nth(0).unwrap().get(1).unwrap().as_str().parse::<u8>()
                     {
-                        Ok(k) => position[2] = k,
-                        Err(e) => position = Option::None
+                        Ok(k) => col = Some([col.unwrap()[0],col.unwrap()[1],k]),
+                        Err(e) => col = None
                     }
                 }
             }
@@ -150,7 +150,7 @@ fn input_col() -> [u8;3]
 
 
     }
-    return position.unwrap();
+    return col.unwrap();
 }
 
 fn main()
@@ -158,6 +158,7 @@ fn main()
     let mut line = String::new();
     //?flood on false else replace
     let mut mode:Option<bool> = Option::None;
+
     while mode == None
     {
         println!("Choose a mode, enter either 'flood' or 'replace'");
@@ -180,19 +181,11 @@ fn main()
         }
     }
 
-    let re = Regex::new(r"(\d+)").unwrap();
-    let a: &str = "Adniel Hamed 193 asidogfh 2439807";
-
-    for c in re.captures_iter(a)
-    {
-        println!("Found {}", &c[0])
-    }
-
 
     //TODO: print out colors.
     let mut stdout = StandardStream::stdout(ColorChoice::Always);
 
-    let in_img = ImageReader::open("res/Ferris.png")
+    let in_img = ImageReader::open("res/Godot.png")
         .expect("File not found!")
         .decode()
         .expect("Error decoding!");
@@ -218,9 +211,10 @@ fn main()
     {
         //? this is the flood mode
         //todo: read in a seed, use the get pixel as the from color for the flood and read in the new color
-        let mut seed = input_pos(Width,Height);
+        let seed = input_pos(width,height);
+        let col = *img.get_pixel(seed.0,seed.1);
         //todo: needs a function to get an rgb
-        flood(&mut img, img.get_pixel(*seed.0,*seed.1),Rgb::from([0,0,0]),seed);
+        flood(&mut img, col,Rgb::from([255,0,0]),seed);
 
     }
 
