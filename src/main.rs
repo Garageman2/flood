@@ -7,6 +7,15 @@ use std::{thread,time};
 use std::io::Write;
 use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
 
+fn gen_palette(img: &RgbImage)->HashMap<[u8;3],(u32,u32)>
+{
+    let mut cache = HashMap::new();
+    for (x,y,p) in img.enumerate_pixels()
+    {
+        cache.entry(p.0).or_insert((x,y));
+    }
+    return cache;
+}
 
 fn col_dist(col:Rgb<u8>, new_col:Rgb<u8>) ->f32
 {
@@ -42,11 +51,9 @@ fn flood( img: &mut RgbImage, col:Rgb<u8>, new_col:Rgb<u8>, seed:(u32,u32))
             let temp: (u32, u32) = ((pix.0 as i32 + o.0).clamp(0,img.width() as i32 -1) as u32,
                                         (pix.1 as i32 + o.1).clamp(0,img.height() as i32 -1) as u32);
             let old = *img.get_pixel(temp.0,temp.1);
-            //println!("The color is {},{},{}",old[0],old[1],old[2]);
             if old != col
-            //col_dist(*img.get_pixel(temp.0,temp.1),col)/MAXDIST < DISTTHRESHOLD
+            // # col_dist(*img.get_pixel(temp.0,temp.1),col)/MAXDIST < DISTTHRESHOLD
             {
-                //println!("pass");
                 continue;
             }
             //println!("hit");
@@ -68,29 +75,24 @@ fn main()
     //TODO: print out colors.
     let mut stdout = StandardStream::stdout(ColorChoice::Always);
 
-    let in_img = ImageReader::open("res/Godot.png")
+    let in_img = ImageReader::open("res/Ferris.png")
         .expect("File not found!")
         .decode()
         .expect("Error decoding!");
     let mut img: RgbImage = in_img.into_rgb8();
     let height: u32 = img.height();
     let width: u32 = img.width();
-    let mut cache = HashMap::new();
+    let mut cache: HashMap<[u8;3],(u32,u32)> = gen_palette(&img);
 
-    for (x,y,p) in img.enumerate_pixels()
-    {
-        cache.entry(p.0).or_insert((x,y));
-    }
+    const FROM_COL:[u8;3] = [255,255,255];
 
-    for (i,v) in cache.iter().enumerate()
+    // ? this is a replace mode, maybe take in an input to replace, or do it at seed
+    while cache.contains_key(&FROM_COL)
     {
-        //these are seeds for the flood fill
-        stdout.set_color(ColorSpec::new().set_fg(Some(Color::Rgb(v.0[0] as u8,v.0[1] as u8,v.0[2] as u8)))).expect("fail to set color");
-        println!("{}.({},{},{})",i,v.0[0],v.0[1],v.0[2]);
-        //println!("Pixel is {},{},{} at {},{}", k[0],k[1],k[2],v.0,v.1);
-        //flood(&mut img,Rgb::from(k),Rgb::from([20,20,20]),v);
+        flood(&mut img, Rgb::from(FROM_COL), Rgb::from([200,255,255]), *cache.get(&FROM_COL).unwrap());
+        cache.clear();
+        cache = gen_palette(&img);
     }
-    flood(&mut img,Rgb::from([255,255,255]),Rgb::from([200,60,100]),(0,0));
 
     img.save("Output.png").expect("Failed to write image");
 
