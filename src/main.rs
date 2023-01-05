@@ -192,29 +192,30 @@ fn main()
     let mut img: RgbImage = in_img.into_rgb8();
     let height: u32 = img.height();
     let width: u32 = img.width();
-    let mut cache: HashMap<[u8;3],(u32,u32)> = gen_palette(&img);
 
 
     // ? this is a replace mode, maybe take in an input to replace, or do it at seed
     if mode.unwrap()
     {
-        //TODO: read in the from color and the to color and check if in map, also add option to print map
-        const FROM_COL:[u8;3] = [255,255,255];
-        while cache.contains_key(&FROM_COL)
+        let mut cache: HashMap<[u8;3],(u32,u32)> = gen_palette(&img);
+        println!("Enter the color to replace");
+        let from_col = input_col();
+        println!("Enter the color to replace it with");
+        let to_col = input_col();
+        while cache.contains_key(&from_col)
         {
-            flood(&mut img, Rgb::from(FROM_COL), Rgb::from([200, 255, 255]), *cache.get(&FROM_COL).unwrap());
+            flood(&mut img, Rgb::from(from_col), Rgb::from(to_col), *cache.get(&from_col).unwrap());
             cache.clear();
             cache = gen_palette(&img);
         }
     }
     else
     {
-        //? this is the flood mode
-        //todo: read in a seed, use the get pixel as the from color for the flood and read in the new color
         let seed = input_pos(width,height);
         let col = *img.get_pixel(seed.0,seed.1);
-        //todo: needs a function to get an rgb
-        flood(&mut img, col,Rgb::from([255,0,0]),seed);
+        println!("Enter the color to flood");
+        let to_col = input_col();
+        flood(&mut img, col,Rgb::from(to_col),seed);
 
     }
 
