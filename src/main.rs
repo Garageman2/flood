@@ -1,13 +1,11 @@
 extern crate gif;
 extern crate image;
 extern crate regex;
-use image::{Rgb,RgbImage,DynamicImage,io::Reader as ImageReader};
+use image::{Rgb,RgbImage,io::Reader as ImageReader};
 use std::collections::{HashMap, VecDeque};
-use std::{thread,time};
-use std::fmt::format;
-use std::fs::{read_dir, File};
+use std::fs::{ File};
 use regex::Regex;
-use gif::{Frame,Encoder,Repeat};
+use gif::{Frame,Encoder};
 
 fn gen_palette(img: &RgbImage)->HashMap<[u8;3],(u32,u32)>
 {
@@ -19,7 +17,7 @@ fn gen_palette(img: &RgbImage)->HashMap<[u8;3],(u32,u32)>
     return cache;
 }
 
-fn flood( img: &mut RgbImage, col:Rgb<u8>, new_col:Rgb<u8>, seed:(u32,u32))
+fn flood( img: &mut RgbImage, col:Rgb<u8>, new_col:Rgb<u8>, seed:(u32,u32),mode:bool, encoder: &mut Encoder<&mut File>)
 {
 
     //? will need to check that neighbors are == col to add to queue. Is a set needed for already flooded then?
@@ -50,11 +48,19 @@ fn flood( img: &mut RgbImage, col:Rgb<u8>, new_col:Rgb<u8>, seed:(u32,u32))
             let _ = &img.put_pixel(temp.0,temp.1,new_col);
             ind += 1;
 
-            const STEP:i32 = 100;
+            const STEP:i32 = 7000;
 
-            if ind%STEP == 0
+            if ind%STEP == 0 && !mode
             {
-                img.save(format!("temp/FrameOutput_{}.jpg",format!("{:03}",ind/STEP))).expect("Error Saving");
+                let mut pixels: Vec<u8> = vec![];
+                for &p in img.pixels()
+                {
+                    pixels.push(p.0[0]);
+                    pixels.push(p.0[1]);
+                    pixels.push(p.0[2]);
+                }
+                let frame = Frame::from_rgb(img.width() as u16,img.height() as u16,&mut pixels);
+                encoder.write_frame(&frame).unwrap();
             }
             queue.push_back(temp);
 
@@ -107,7 +113,7 @@ fn input_col() -> [u8;3]
     let mut col:Option<[u8;3]> = None;
     while col == None
     {
-        println!("enter a position in the format R,G,B such as 255,255,255 ");
+        println!("enter a color in the format R,G,B such as 255,255,255 ");
         std::io::stdin().read_line(&mut line).unwrap();
         let re = Regex::new(r"(\d+)").unwrap();
         let mut cap = re.captures_iter(&line);
@@ -176,7 +182,7 @@ fn main()
 
 
 
-    let in_img = ImageReader::open("res/ferris.png")
+    let in_img = ImageReader::open("res/Godot.jpg")
         .expect("File not found!")
         .decode()
         .expect("Error decoding!");
@@ -184,6 +190,8 @@ fn main()
     let height: u32 = img.height();
     let width: u32 = img.width();
 
+    let mut image = File::create("out.gif").unwrap();
+    let mut encoder = gif::Encoder::new(&mut image, width as u16,height as u16,&[]).unwrap();
 
     // ? this is a replace mode, maybe take in an input to replace, or do it at seed
     if mode.unwrap()
@@ -195,7 +203,7 @@ fn main()
         let to_col = input_col();
         while cache.contains_key(&from_col)
         {
-            flood(&mut img, Rgb::from(from_col), Rgb::from(to_col), *cache.get(&from_col).unwrap());
+            flood(&mut img, Rgb::from(from_col), Rgb::from(to_col), *cache.get(&from_col).unwrap(), mode.unwrap(), &mut encoder);
             cache.clear();
             cache = gen_palette(&img);
         }
@@ -206,24 +214,7 @@ fn main()
         let col = *img.get_pixel(seed.0,seed.1);
         println!("Enter the color to flood");
         let to_col = input_col();
-        flood(&mut img, col,Rgb::from(to_col),seed);
-
-    }
-
-
-    img.save("Output.png").expect("Failed to write image");
-
-    //? make the gif
-
-    println!("Files: {}", read_dir("./temp").unwrap().count());
-
-    let mut image = File::create("out.gif").unwrap();
-    let mut encoder = gif::Encoder::new(&mut image, width as u16,height as u16,&[]).unwrap();
-
-    for file in read_dir("./temp").unwrap()
-    {
-        println!("file {}", file.as_ref().unwrap().file_name().into_string().unwrap());
-        let mut img: RgbImage = ImageReader::open(format!("temp/{}",&file.unwrap().file_name().into_string().unwrap())).unwrap().decode().unwrap().into_rgb8();
+        flood(&mut img, col,Rgb::from(to_col),seed,mode.unwrap(),&mut encoder);
         let mut pixels: Vec<u8> = vec![];
         for &p in img.pixels()
         {
@@ -231,13 +222,12 @@ fn main()
             pixels.push(p.0[1]);
             pixels.push(p.0[2]);
         }
-        println!("Width: {}, Height: {}, mult: {}, len: {}", width,height,(width*height *3),pixels.len());
-        let frame = gif::Frame::from_rgb(width as u16,height as u16,&mut pixels);
+        let frame = Frame::from_rgb(img.width() as u16,img.height() as u16,&mut pixels);
         encoder.write_frame(&frame).unwrap();
+
     }
 
-
-
+    img.save("Output.png").expect("Failed to write image");
 
 
 }
