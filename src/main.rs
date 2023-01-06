@@ -48,7 +48,7 @@ fn flood( img: &mut RgbImage, col:Rgb<u8>, new_col:Rgb<u8>, seed:(u32,u32),mode:
             let _ = &img.put_pixel(temp.0,temp.1,new_col);
             ind += 1;
 
-            const STEP:i32 = 7000;
+            const STEP:i32 = 70;
 
             if ind%STEP == 0 && !mode
             {
@@ -182,7 +182,7 @@ fn main()
 
 
 
-    let in_img = ImageReader::open("res/Godot.jpg")
+    let in_img = ImageReader::open("res/ferris.png")
         .expect("File not found!")
         .decode()
         .expect("Error decoding!");
@@ -190,7 +190,7 @@ fn main()
     let height: u32 = img.height();
     let width: u32 = img.width();
 
-    let mut image = File::create("out.gif").unwrap();
+    let mut image = File::create("demo/out.gif").unwrap();
     let mut encoder = gif::Encoder::new(&mut image, width as u16,height as u16,&[]).unwrap();
 
     // ? this is a replace mode, maybe take in an input to replace, or do it at seed
