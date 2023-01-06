@@ -16,14 +16,6 @@ fn gen_palette(img: &RgbImage)->HashMap<[u8;3],(u32,u32)>
     return cache;
 }
 
-// fn col_dist(col:Rgb<u8>, new_col:Rgb<u8>) ->f32
-// {
-//     return ((col[0] as f32 - new_col[0] as f32).powf(2.0) +
-//                             (col[1] as f32 - new_col[1] as f32).powf(2.0) +
-//                             (col[2] as f32 - new_col[2] as f32).powf(2.0)).sqrt();
-//
-// }
-
 fn flood( img: &mut RgbImage, col:Rgb<u8>, new_col:Rgb<u8>, seed:(u32,u32))
 {
 
@@ -34,6 +26,8 @@ fn flood( img: &mut RgbImage, col:Rgb<u8>, new_col:Rgb<u8>, seed:(u32,u32))
 
     const OFFSETS:[(i32,i32); 8] = [(1,0),(1,1),(0,1),(-1,1),(-1,0),(-1,-1),(0,-1),(1,-1)];
     img.put_pixel(seed.0,seed.1,new_col);
+
+    let mut ind:i32 = 0;
 
     while !queue.is_empty()
     {
@@ -51,6 +45,14 @@ fn flood( img: &mut RgbImage, col:Rgb<u8>, new_col:Rgb<u8>, seed:(u32,u32))
                 continue;
             }
             let _ = &img.put_pixel(temp.0,temp.1,new_col);
+            ind += 1;
+
+            const STEP:i32 = 100;
+
+            if ind%STEP == 0
+            {
+                img.save(format!("temp/Output_{}.jpg", ind/STEP)).expect("Error Saving");
+            }
             queue.push_back(temp);
 
         }
@@ -171,7 +173,7 @@ fn main()
 
 
 
-    let in_img = ImageReader::open("res/Godot.png")
+    let in_img = ImageReader::open("res/ferris.png")
         .expect("File not found!")
         .decode()
         .expect("Error decoding!");
