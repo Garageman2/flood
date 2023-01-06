@@ -4,7 +4,10 @@ extern crate regex;
 use image::{Rgb,RgbImage,DynamicImage,io::Reader as ImageReader};
 use std::collections::{HashMap, VecDeque};
 use std::{thread,time};
+use std::fmt::format;
+use std::fs::{read_dir, File};
 use regex::Regex;
+use gif::{Frame,Encoder,Repeat};
 
 fn gen_palette(img: &RgbImage)->HashMap<[u8;3],(u32,u32)>
 {
@@ -51,7 +54,7 @@ fn flood( img: &mut RgbImage, col:Rgb<u8>, new_col:Rgb<u8>, seed:(u32,u32))
 
             if ind%STEP == 0
             {
-                img.save(format!("temp/Output_{}.jpg", ind/STEP)).expect("Error Saving");
+                img.save(format!("temp/FrameOutput_{}.jpg",format!("{:03}",ind/STEP))).expect("Error Saving");
             }
             queue.push_back(temp);
 
@@ -209,5 +212,32 @@ fn main()
 
 
     img.save("Output.png").expect("Failed to write image");
+
+    //? make the gif
+
+    println!("Files: {}", read_dir("./temp").unwrap().count());
+
+    let mut image = File::create("out.gif").unwrap();
+    let mut encoder = gif::Encoder::new(&mut image, width as u16,height as u16,&[]).unwrap();
+
+    for file in read_dir("./temp").unwrap()
+    {
+        println!("file {}", file.as_ref().unwrap().file_name().into_string().unwrap());
+        let mut img: RgbImage = ImageReader::open(format!("temp/{}",&file.unwrap().file_name().into_string().unwrap())).unwrap().decode().unwrap().into_rgb8();
+        let mut pixels: Vec<u8> = vec![];
+        for &p in img.pixels()
+        {
+            pixels.push(p.0[0]);
+            pixels.push(p.0[1]);
+            pixels.push(p.0[2]);
+        }
+        println!("Width: {}, Height: {}, mult: {}, len: {}", width,height,(width*height *3),pixels.len());
+        let frame = gif::Frame::from_rgb(width as u16,height as u16,&mut pixels);
+        encoder.write_frame(&frame).unwrap();
+    }
+
+
+
+
 
 }
