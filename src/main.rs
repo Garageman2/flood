@@ -190,7 +190,7 @@ fn main()
     let height: u32 = img.height();
     let width: u32 = img.width();
 
-    let mut image = File::create("demo/out.gif").unwrap();
+    let mut image = File::create("out.gif").unwrap();
     let mut encoder = gif::Encoder::new(&mut image, width as u16,height as u16,&[]).unwrap();
 
     // ? this is a replace mode, maybe take in an input to replace, or do it at seed
